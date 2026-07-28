@@ -5,13 +5,14 @@ enum GameState {
     Playing {
         grid: [[u8; 10]; 20],
         controled: Controled,
+        timer: f64,
     },
     GameOver,
 }
 
 struct Controled {
-    x: u8,
-    y: u8,
+    x: usize,
+    y: usize,
 }
 
 #[macroquad::main("tetris")]
@@ -29,6 +30,7 @@ async fn main() {
                     state = GameState::Playing {
                         grid: [[0; 10]; 20],
                         controled: Controled { x: 4, y: 0 },
+                        timer: get_time(),
                     };
                 }
             }
@@ -37,18 +39,37 @@ async fn main() {
             GameState::Playing {
                 ref mut grid,
                 ref mut controled,
+                ref mut timer,
             } => {
                 // logic
-                if is_key_pressed(KeyCode::Left) && controled.x > 0 {
+                if is_key_pressed(KeyCode::Left)
+                    && controled.x > 0
+                    && grid[controled.y][controled.x - 1] != 1
+                {
                     controled.x -= 1;
                 }
-                if is_key_pressed(KeyCode::Right) && controled.x < 9 {
+                if is_key_pressed(KeyCode::Right)
+                    && controled.x < 9
+                    && grid[controled.y][controled.x + 1] != 1
+                {
                     controled.x += 1;
                 }
-                if is_key_pressed(KeyCode::Down) && controled.y < 19 {
-                    controled.y += 1;
+
+                // down calcurate
+                if get_time() - *timer > 1. || is_key_pressed(KeyCode::Down) {
+                    if controled.y < 19 && grid[controled.y + 1][controled.x] != 1 {
+                        controled.y += 1;
+                    } else {
+                        grid[controled.y][controled.x] = 1;
+                        controled.x = 4;
+                        controled.y = 0;
+                    }
+                    *timer = get_time();
                 }
+
+                //tmp
                 grid[19][0] = 1;
+                grid[19][1] = 1;
 
                 // draw
                 for y in 0..grid.len() {
