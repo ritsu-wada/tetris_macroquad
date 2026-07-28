@@ -2,8 +2,16 @@ use macroquad::{miniquad::window::set_window_size, prelude::*};
 
 enum GameState {
     Title,
-    Playing { grid: [[u8; 10]; 20] },
+    Playing {
+        grid: [[u8; 10]; 20],
+        controled: Controled,
+    },
     GameOver,
+}
+
+struct Controled {
+    x: u8,
+    y: u8,
 }
 
 #[macroquad::main("tetris")]
@@ -20,11 +28,26 @@ async fn main() {
                 if is_key_pressed(KeyCode::Space) {
                     state = GameState::Playing {
                         grid: [[0; 10]; 20],
+                        controled: Controled { x: 4, y: 0 },
                     };
                 }
             }
-            GameState::Playing { mut grid } => {
+            // ref matchはstateから所有権をもぎ取るためループ終わりに破棄されてしまう. match &stateと書いてもいい
+            // &は式として使う, refは指示らしい
+            GameState::Playing {
+                ref mut grid,
+                ref mut controled,
+            } => {
                 // logic
+                if is_key_pressed(KeyCode::Left) && controled.x > 0 {
+                    controled.x -= 1;
+                }
+                if is_key_pressed(KeyCode::Right) && controled.x < 9 {
+                    controled.x += 1;
+                }
+                if is_key_pressed(KeyCode::Down) && controled.y < 19 {
+                    controled.y += 1;
+                }
                 grid[19][0] = 1;
 
                 // draw
@@ -53,6 +76,13 @@ async fn main() {
                         }
                     }
                 }
+                draw_rectangle(
+                    controled.x as f32 * BLOCK_SIZE + (screen_width() / 4.),
+                    controled.y as f32 * BLOCK_SIZE + 50.,
+                    BLOCK_SIZE,
+                    BLOCK_SIZE,
+                    WHITE,
+                );
             }
             GameState::GameOver => {}
         }
