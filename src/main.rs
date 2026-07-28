@@ -31,7 +31,7 @@ async fn main() {
                         grid: [[0; 10]; 20],
                         controled: Controled { x: 4, y: 0 },
                         timer: get_time(),
-                    };
+                    }
                 }
             }
             // ref matchはstateから所有権をもぎ取るためループ終わりに破棄されてしまう. match &stateと書いてもいい
@@ -56,13 +56,24 @@ async fn main() {
                 }
 
                 // down calcurate
-                if get_time() - *timer > 1. || is_key_pressed(KeyCode::Down) {
+                if get_time() - *timer > 0.3 || is_key_pressed(KeyCode::Down) {
                     if controled.y < 19 && grid[controled.y + 1][controled.x] != 1 {
                         controled.y += 1;
                     } else {
                         grid[controled.y][controled.x] = 1;
-                        controled.x = 4;
-                        controled.y = 0;
+                        //check line is filled
+                        for y in (0..20).rev() {
+                            if !grid[y].contains(&0) {
+                                for target_y in (1..=y).rev() {
+                                    grid[target_y] = grid[target_y - 1];
+                                }
+                            }
+                        }
+                        if grid[0][4] == 1 {
+                        } else {
+                            controled.x = 4;
+                            controled.y = 0;
+                        }
                     }
                     *timer = get_time();
                 }
@@ -105,8 +116,8 @@ async fn main() {
                     WHITE,
                 );
             }
-            GameState::GameOver => {}
-        }
+            GameState::GameOver => (),
+        };
         next_frame().await;
     }
 }
