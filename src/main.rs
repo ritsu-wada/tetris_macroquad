@@ -26,6 +26,7 @@ async fn main() {
         match state {
             GameState::Title => {
                 draw_text("TETRIS", 100., 100., 40., WHITE);
+                draw_text("press space", 100., 200., 30., WHITE);
                 if is_key_pressed(KeyCode::Space) {
                     state = GameState::Playing {
                         grid: [[0; 10]; 20],
@@ -41,6 +42,7 @@ async fn main() {
                 ref mut controled,
                 ref mut timer,
             } => {
+                let mut is_game_over = false;
                 // logic
                 if is_key_pressed(KeyCode::Left)
                     && controled.x > 0
@@ -70,6 +72,7 @@ async fn main() {
                             }
                         }
                         if grid[0][4] == 1 {
+                            is_game_over = true;
                         } else {
                             controled.x = 4;
                             controled.y = 0;
@@ -77,10 +80,6 @@ async fn main() {
                     }
                     *timer = get_time();
                 }
-
-                //tmp
-                grid[19][0] = 1;
-                grid[19][1] = 1;
 
                 // draw
                 for y in 0..grid.len() {
@@ -115,8 +114,17 @@ async fn main() {
                     BLOCK_SIZE,
                     WHITE,
                 );
+                if is_game_over {
+                    state = GameState::GameOver;
+                }
             }
-            GameState::GameOver => (),
+            GameState::GameOver => {
+                draw_text("Game Over", 100., 100., 40., WHITE);
+                draw_text("press space", 100., 200., 30., WHITE);
+                if is_key_down(KeyCode::Space) {
+                    state = GameState::Title;
+                }
+            }
         };
         next_frame().await;
     }
