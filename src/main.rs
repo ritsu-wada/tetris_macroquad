@@ -13,6 +13,7 @@ enum GameState {
 struct Controled {
     x: usize,
     y: usize,
+    current_shape: [[u8; 4]; 4],
 }
 
 #[macroquad::main("tetris")]
@@ -30,7 +31,11 @@ async fn main() {
                 if is_key_pressed(KeyCode::Space) {
                     state = GameState::Playing {
                         grid: [[0; 10]; 20],
-                        controled: Controled { x: 4, y: 0 },
+                        controled: Controled {
+                            x: 4,
+                            y: 0,
+                            current_shape: [[0, 0, 0, 0], [1, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
+                        },
                         timer: get_time(),
                     }
                 }
@@ -44,25 +49,69 @@ async fn main() {
             } => {
                 let mut is_game_over = false;
                 // logic
-                if is_key_pressed(KeyCode::Left)
-                    && controled.x > 0
-                    && grid[controled.y][controled.x - 1] != 1
-                {
+                if is_key_pressed(KeyCode::Left) && controled.x > 0 && {
+                    let mut can_move = true;
+                    for i in 0..4 {
+                        for j in 0..4 {
+                            if controled.current_shape[i][j] != 0 {
+                                let next_x = controled.x + j - 1;
+                                let next_y = controled.y + i;
+                                if next_y > 19 || next_x > 9 || grid[next_y][next_x] != 0 {
+                                    can_move = false;
+                                }
+                            }
+                        }
+                    }
+                    can_move
+                } {
                     controled.x -= 1;
                 }
-                if is_key_pressed(KeyCode::Right)
-                    && controled.x < 9
-                    && grid[controled.y][controled.x + 1] != 1
-                {
+                if is_key_pressed(KeyCode::Right) && {
+                    let mut can_move = true;
+                    for i in 0..4 {
+                        for j in 0..4 {
+                            if controled.current_shape[i][j] != 0 {
+                                let next_x = controled.x + j + 1;
+                                let next_y = controled.y + i;
+                                if next_y > 19 || next_x > 9 || grid[next_y][next_x] != 0 {
+                                    can_move = false;
+                                }
+                            }
+                        }
+                    }
+                    can_move
+                } {
                     controled.x += 1;
                 }
 
                 // down calcurate
                 if get_time() - *timer > 0.3 || is_key_pressed(KeyCode::Down) {
-                    if controled.y < 19 && grid[controled.y + 1][controled.x] != 1 {
+                    if {
+                        let mut can_move = true;
+                        for i in 0..4 {
+                            for j in 0..4 {
+                                if controled.current_shape[i][j] != 0 {
+                                    let next_x = controled.x + j;
+                                    let next_y = controled.y + i + 1;
+                                    if next_y > 19 || grid[next_y][next_x] != 0 {
+                                        can_move = false;
+                                    }
+                                }
+                            }
+                        }
+                        can_move
+                    } {
                         controled.y += 1;
                     } else {
-                        grid[controled.y][controled.x] = 1;
+                        //fill block
+                        for i in 0..4 {
+                            for j in 0..4 {
+                                if controled.current_shape[i][j] != 0 {
+                                    grid[controled.y + i][controled.x + j] =
+                                        controled.current_shape[i][j];
+                                }
+                            }
+                        }
                         //check line is filled
                         for y in (0..20).rev() {
                             if !grid[y].contains(&0) {
@@ -71,7 +120,21 @@ async fn main() {
                                 }
                             }
                         }
-                        if grid[0][4] == 1 {
+                        if controled.x == 4 && controled.y == 0 && {
+                            let mut can_move = false;
+                            for i in 0..4 {
+                                for j in 0..4 {
+                                    if controled.current_shape[i][j] != 0 {
+                                        let next_x = controled.x + j;
+                                        let next_y = controled.y + i;
+                                        if next_y > 19 || grid[next_y][next_x] != 0 {
+                                            can_move = true;
+                                        }
+                                    }
+                                }
+                            }
+                            can_move
+                        } {
                             is_game_over = true;
                         } else {
                             controled.x = 4;
@@ -107,13 +170,20 @@ async fn main() {
                         }
                     }
                 }
-                draw_rectangle(
-                    controled.x as f32 * BLOCK_SIZE + (screen_width() / 4.),
-                    controled.y as f32 * BLOCK_SIZE + 50.,
-                    BLOCK_SIZE,
-                    BLOCK_SIZE,
-                    WHITE,
-                );
+                //drow controled mino
+                for cy in 0..4 {
+                    for cx in 0..4 {
+                        if controled.current_shape[cy][cx] != 0 {
+                            draw_rectangle(
+                                (controled.x + cx) as f32 * BLOCK_SIZE + (screen_width() / 4.),
+                                (controled.y + cy) as f32 * BLOCK_SIZE + 50.,
+                                BLOCK_SIZE,
+                                BLOCK_SIZE,
+                                WHITE,
+                            );
+                        }
+                    }
+                }
                 if is_game_over {
                     state = GameState::GameOver;
                 }
