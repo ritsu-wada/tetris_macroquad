@@ -21,6 +21,43 @@ async fn main() {
     set_window_size(400, 500);
     let mut state = GameState::Title;
     const BLOCK_SIZE: f32 = 20.;
+    //     const SHAPES = [
+    //     // T
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     //
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     //
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     //
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     //
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     //
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     //
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    //     [0,0,0,0],
+    // ]
 
     loop {
         clear_background(BLACK);
@@ -82,6 +119,33 @@ async fn main() {
                     can_move
                 } {
                     controled.x += 1;
+                }
+
+                // rotate
+                if is_key_pressed(KeyCode::Space) {
+                    let mut rotated = [[0; 4]; 4];
+                    for y in 0..4 {
+                        for x in 0..4 {
+                            rotated[x][3 - y] = controled.current_shape[y][x];
+                        }
+                    }
+                    if {
+                        let mut can_move = true;
+                        for i in 0..4 {
+                            for j in 0..4 {
+                                if rotated[i][j] != 0 {
+                                    let next_x = controled.x + j;
+                                    let next_y = controled.y + i;
+                                    if next_y > 19 || next_x > 9 || grid[next_y][next_x] != 0 {
+                                        can_move = false;
+                                    }
+                                }
+                            }
+                        }
+                        can_move
+                    } {
+                        controled.current_shape = rotated;
+                    }
                 }
 
                 // down calcurate
