@@ -11,15 +11,31 @@ enum GameState {
 }
 
 struct Controled {
-    x: usize,
-    y: usize,
+    x: isize,
+    y: isize,
     current_shape: [[u8; 4]; 4],
+}
+
+fn can_move(grid: &[[u8; 10]; 20], shape: &[[u8; 4]; 4], x: isize, y: isize) -> bool {
+    for i in 0..4 {
+        for j in 0..4 {
+            if shape[i][j] != 0 {
+                let gy = y + i as isize - 1;
+                let gx = x + j as isize - 1;
+                if gy < 0 || gx < 0 || gy > 19 || gx > 9 || grid[gy as usize][gx as usize] != 0 {
+                    return false;
+                }
+            }
+        }
+    }
+    true
 }
 
 #[macroquad::main("tetris")]
 async fn main() {
     set_window_size(400, 500);
     let mut state = GameState::Title;
+
     const BLOCK_SIZE: f32 = 20.;
     const SHAPES: [[[u8; 4]; 4]; 7] = [
         // T
@@ -49,7 +65,7 @@ async fn main() {
                         grid: [[0; 10]; 20],
                         controled: Controled {
                             x: 4,
-                            y: 0,
+                            y: 1,
                             current_shape: SHAPES[macroquad::rand::gen_range(0, 7)],
                         },
                         timer: get_time(),
@@ -65,38 +81,25 @@ async fn main() {
             } => {
                 let mut is_game_over = false;
                 // logic
-                if is_key_pressed(KeyCode::Left) && controled.x > 0 && {
-                    let mut can_move = true;
-                    for i in 0..4 {
-                        for j in 0..4 {
-                            if controled.current_shape[i][j] != 0 {
-                                let next_x = controled.x + j - 1;
-                                let next_y = controled.y + i;
-                                if next_y > 19 || next_x > 9 || grid[next_y][next_x] != 0 {
-                                    can_move = false;
-                                }
-                            }
-                        }
-                    }
-                    can_move
-                } {
+                if is_key_pressed(KeyCode::Left)
+                    && controled.x > 0
+                    && can_move(
+                        &grid,
+                        &controled.current_shape,
+                        controled.x - 1,
+                        controled.y,
+                    )
+                {
                     controled.x -= 1;
                 }
-                if is_key_pressed(KeyCode::Right) && {
-                    let mut can_move = true;
-                    for i in 0..4 {
-                        for j in 0..4 {
-                            if controled.current_shape[i][j] != 0 {
-                                let next_x = controled.x + j + 1;
-                                let next_y = controled.y + i;
-                                if next_y > 19 || next_x > 9 || grid[next_y][next_x] != 0 {
-                                    can_move = false;
-                                }
-                            }
-                        }
-                    }
-                    can_move
-                } {
+                if is_key_pressed(KeyCode::Right)
+                    && can_move(
+                        &grid,
+                        &controled.current_shape,
+                        controled.x + 1,
+                        controled.y,
+                    )
+                {
                     controled.x += 1;
                 }
 
@@ -108,41 +111,20 @@ async fn main() {
                             rotated[x][3 - y] = controled.current_shape[y][x];
                         }
                     }
-                    if {
-                        let mut can_move = true;
-                        for i in 0..4 {
-                            for j in 0..4 {
-                                if rotated[i][j] != 0 {
-                                    let next_x = controled.x + j;
-                                    let next_y = controled.y + i;
-                                    if next_y > 19 || next_x > 9 || grid[next_y][next_x] != 0 {
-                                        can_move = false;
-                                    }
-                                }
-                            }
-                        }
-                        can_move
-                    } {
+                    if can_move(&grid, &rotated, controled.x, controled.y) {
                         controled.current_shape = rotated;
                     }
                 }
 
                 // down calcurate
-                if get_time() - *timer > 0.3 || is_key_pressed(KeyCode::Down) {
+                if get_time() - *timer > 1. || is_key_pressed(KeyCode::Down) {
                     if {
-                        let mut can_move = true;
-                        for i in 0..4 {
-                            for j in 0..4 {
-                                if controled.current_shape[i][j] != 0 {
-                                    let next_x = controled.x + j;
-                                    let next_y = controled.y + i + 1;
-                                    if next_y > 19 || grid[next_y][next_x] != 0 {
-                                        can_move = false;
-                                    }
-                                }
-                            }
-                        }
-                        can_move
+                        can_move(
+                            &grid,
+                            &controled.current_shape,
+                            controled.x,
+                            controled.y + 1,
+                        )
                     } {
                         controled.y += 1;
                     } else {
@@ -150,7 +132,8 @@ async fn main() {
                         for i in 0..4 {
                             for j in 0..4 {
                                 if controled.current_shape[i][j] != 0 {
-                                    grid[controled.y + i][controled.x + j] =
+                                    grid[(controled.y + i as isize - 1) as usize]
+                                        [(controled.x + j as isize - 1) as usize] =
                                         controled.current_shape[i][j];
                                 }
                             }
@@ -163,25 +146,13 @@ async fn main() {
                                 }
                             }
                         }
-                        if controled.x == 4 && controled.y == 0 && {
-                            let mut can_move = false;
-                            for i in 0..4 {
-                                for j in 0..4 {
-                                    if controled.current_shape[i][j] != 0 {
-                                        let next_x = controled.x + j;
-                                        let next_y = controled.y + i;
-                                        if next_y > 19 || grid[next_y][next_x] != 0 {
-                                            can_move = true;
-                                        }
-                                    }
-                                }
-                            }
-                            can_move
+                        if controled.x == 4 && controled.y == 1 && {
+                            can_move(&grid, &controled.current_shape, controled.x, controled.y)
                         } {
                             is_game_over = true;
                         } else {
                             controled.x = 4;
-                            controled.y = 0;
+                            controled.y = 1;
                             controled.current_shape = SHAPES[macroquad::rand::gen_range(0, 7)];
                         }
                     }
@@ -219,8 +190,9 @@ async fn main() {
                     for cx in 0..4 {
                         if controled.current_shape[cy][cx] != 0 {
                             draw_rectangle(
-                                (controled.x + cx) as f32 * BLOCK_SIZE + (screen_width() / 4.),
-                                (controled.y + cy) as f32 * BLOCK_SIZE + 50.,
+                                (controled.x as f32 + cx as f32 - 1.0) * BLOCK_SIZE
+                                    + (screen_width() / 4.),
+                                (controled.y as f32 + cy as f32 - 1.0) * BLOCK_SIZE + 50.,
                                 BLOCK_SIZE,
                                 BLOCK_SIZE,
                                 WHITE,
