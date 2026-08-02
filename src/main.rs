@@ -40,18 +40,18 @@ async fn main() {
     const SHAPES: [[[u8; 4]; 4]; 7] = [
         // T
         [[0, 0, 0, 0], [1, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
-        // I
-        [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
         // L
         [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
         // J
         [[0, 1, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]],
-        // O
-        [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
         // S
         [[0, 0, 0, 0], [0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0]],
         // Z
         [[0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
+        // I
+        [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+        // O
+        [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
     ];
 
     loop {
@@ -139,15 +139,19 @@ async fn main() {
                             }
                         }
                         //check line is filled
-                        for y in (0..20).rev() {
-                            if !grid[y].contains(&0) {
-                                for target_y in (1..=y).rev() {
+                        let mut level = 19;
+                        while level > 0 {
+                            if !grid[level].contains(&0) {
+                                for target_y in (1..=level).rev() {
                                     grid[target_y] = grid[target_y - 1];
                                 }
+                                grid[0] = [0; 10];
+                            } else {
+                                level -= 1;
                             }
                         }
                         if controled.x == 4 && controled.y == 1 && {
-                            can_move(&grid, &controled.current_shape, controled.x, controled.y)
+                            !can_move(&grid, &controled.current_shape, controled.x, controled.y)
                         } {
                             is_game_over = true;
                         } else {
