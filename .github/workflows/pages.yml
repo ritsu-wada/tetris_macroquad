@@ -24,17 +24,22 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      # ビルド時間を劇的に短縮するためのキャッシュ設定
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+
       - name: Build WebAssembly
         run: cargo build --release --target wasm32-unknown-unknown
 
       - name: Prepare Build Directory
         run: |
           mkdir -p dist
-          # htmlファイルを移動
           cp index.html dist/
-          # ビルドされたwasmファイルをgame.wasmという名前でコピー
-          # （Cargo.tomlのnameに関わらず統一するため）
-          cp target/wasm32-unknown-unknown/release/*.wasm dist/game.wasm
+          # 明示的にビルドされたwasmファイルを指定してコピー
+          cp target/wasm32-unknown-unknown/release/tetris_macroquad.wasm dist/game.wasm
+          
+          # もし assets フォルダを使っている場合は以下のコメントアウトを解除
+          # cp -r assets dist/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
